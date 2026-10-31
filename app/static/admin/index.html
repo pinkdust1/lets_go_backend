@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taxi — админ-панель</title>
+<style>
+:root{
+  --bg:#f4f5f7; --surface:#fff; --surface-2:#f8f9fb; --text:#15181e; --muted:#667085; --border:#e2e5ea;
+  --accent:#2d6cdf; --accent-weak:#e7effc; --accent-text:#fff;
+  --ok:#17803f; --ok-weak:#e2f4e8; --warn:#9a6700; --warn-weak:#fdf1d3; --bad:#c2352f; --bad-weak:#fbe6e5;
+  --bar2:#c3cad6; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08); --overlay:rgba(16,24,40,.45);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1015; --surface:#161920; --surface-2:#1b1f27; --text:#e7e9ee; --muted:#939bab; --border:#262b35;
+    --accent:#6c9bf4; --accent-weak:#1b2744; --accent-text:#0e1015;
+    --ok:#4cc27f; --ok-weak:#16291f; --warn:#e0b341; --warn-weak:#2c2512; --bad:#f0716a; --bad-weak:#2e1917;
+    --bar2:#465064; --shadow:none; --overlay:rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- login ---------- */
+#login{min-height:100vh;display:grid;place-items:center;padding:16px}
+.login-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;box-shadow:var(--shadow)}
+.login-card h1{margin:0 0 4px;font-size:20px}
+.login-card p{margin:0 0 20px}
+.field{display:block;margin-bottom:14px}
+.field>span{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+input,select{width:100%;height:38px;padding:0 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{height:38px;padding:0 16px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{height:30px;padding:0 11px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.login-card .btn{width:100%}
+.error{color:var(--bad);font-size:13px;margin:0 0 12px}
+.hint{font-size:12px;color:var(--muted);margin-top:10px}
+
+/* ---------- shell ---------- */
+#app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+aside{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.brand{font-weight:700;font-size:16px;padding:4px 10px 16px}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);text-decoration:none}
+nav a:hover{background:var(--surface-2)}
+nav a.active{background:var(--accent-weak);color:var(--accent);font-weight:600}
+nav svg{width:18px;height:18px;flex:none}
+.side-foot{margin-top:auto;padding:10px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)}
+.side-foot button{margin-top:8px;width:100%}
+main{padding:24px 28px 48px;min-width:0}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h2{margin:0;font-size:20px}
+h3{margin:0 0 12px;font-size:15px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-bottom:14px}
+.kpi .label{color:var(--muted);font-size:12px}
+.kpi .value{font-size:26px;font-weight:700;margin:4px 0 2px}
+.kpi .delta{font-size:12px}
+.up{color:var(--ok)} .down{color:var(--bad)} .flat{color:var(--muted)}
+.two{grid-template-columns:repeat(auto-fit,minmax(380px,1fr));margin-bottom:14px}
+.live{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.pill{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px}
+.pill b{font-size:15px}
+.pill.alert{background:var(--warn-weak);border-color:var(--warn);color:var(--warn);cursor:pointer}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:0 14px;height:32px;cursor:pointer}
+.seg button.on{background:var(--accent-weak);color:var(--accent);font-weight:600}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{font-size:11px;fill:var(--muted)}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* ---------- tables ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.filters .f-search{flex:1 1 220px}
+.filters select,.filters input[type=date]{width:auto;min-width:150px}
+.table-wrap{overflow-x:auto;padding:0}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--surface-2)}
+td.addr{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.r,th.r{text-align:right}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+.pager div{display:flex;gap:8px}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-ok{background:var(--ok-weak);color:var(--ok)}
+.b-warn{background:var(--warn-weak);color:var(--warn)}
+.b-bad{background:var(--bad-weak);color:var(--bad)}
+.b-info{background:var(--accent-weak);color:var(--accent)}
+.b-mute{background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+
+/* ---------- drawer / modal ---------- */
+.overlay{position:fixed;inset:0;background:var(--overlay);z-index:20;display:flex;justify-content:flex-end}
+.overlay.center{justify-content:center;align-items:center;padding:16px}
+.panel{background:var(--bg);width:min(560px,100%);height:100%;overflow-y:auto;padding:22px;box-shadow:var(--shadow)}
+.overlay.center .panel{height:auto;max-height:92vh;border-radius:14px;width:min(640px,100%)}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.panel-head h2{font-size:18px}
+.x{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px}
+.section{margin-bottom:14px}
+.section h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+dl{display:grid;grid-template-columns:150px 1fr;gap:8px 12px;margin:0}
+dt{color:var(--muted)} dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.doc{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px 12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.doc:last-child{border-bottom:0}
+.doc .grow{min-width:0}
+.doc .btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.doc small{display:block;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.timeline li:last-child{border:0}
+
+/* ---------- settings ---------- */
+.set-group{margin-bottom:14px}
+.set-row{display:grid;grid-template-columns:1fr 200px;gap:6px 24px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.set-row:last-child{border-bottom:0}
+.set-row .t{font-weight:600}
+.set-row .d{color:var(--muted);font-size:13px;margin-top:2px}
+.set-row .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.input-unit{position:relative}
+.input-unit input{padding-right:42px;text-align:right}
+.input-unit span{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.input-unit input.changed{border-color:var(--accent);background:var(--accent-weak)}
+.savebar{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:12px 0}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;gap:8px;align-items:center}
+.toast{background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.toast.err{background:var(--bad);color:#fff}
+
+@media (max-width:820px){
+  #app{grid-template-columns:1fr}
+  aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;padding:8px 10px;border-right:0;border-bottom:1px solid var(--border)}
+  .brand{padding:0 8px 0 4px} .brand small{display:none}
+  nav{display:flex;gap:2px;overflow-x:auto}
+  nav a{padding:8px 10px;white-space:nowrap} nav a span{display:none} nav a.active span{display:inline}
+  .side-foot{margin:0 0 0 auto;padding:0;border:0} .side-foot .who{display:none} .side-foot button{margin:0;width:auto}
+  main{padding:16px 14px 40px}
+  .two{grid-template-columns:1fr}
+  .set-row{grid-template-columns:1fr}
+  dl{grid-template-columns:110px 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================ ВХОД ============================ -->
+<section id="login" class="hidden">
+  <form class="login-card" id="login-form" autocomplete="off">
+    <h1>Админ-панель</h1>
+    <p class="muted">Вход по SMS-коду для номера администратора</p>
+    <p class="error hidden" id="login-error" role="alert"></p>
+    <label class="field" id="phone-field"><span>Номер телефона</span>
+      <input id="phone" type="tel" inputmode="tel" placeholder="+7 701 000 00 00" required>
+    </label>
+    <label class="field hidden" id="code-field"><span>Код из SMS</span>
+      <input id="code" inputmode="numeric" maxlength="8" placeholder="123456">
+    </label>
+    <button class="btn primary" id="login-btn" type="submit">Получить код</button>
+    <p class="hint hidden" id="debug-hint"></p>
+    <button class="btn hidden" id="login-back" type="button" style="margin-top:8px">Изменить номер</button>
+  </form>
+</section>
+
+<!-- ============================ ПРИЛОЖЕНИЕ ============================ -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">Taxi<small>админ-панель</small></div>
+    <nav id="nav">
+      <a href="#/dashboard" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg><span>Дашборд</span></a>
+      <a href="#/users" data-page="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7"/><path d="M17 4a4 4 0 0 1 0 8M22 21c0-3-2-5.5-5-6.5"/></svg><span>Пользователи</span></a>
+      <a href="#/rides" data-page="rides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M3 13l2-6a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 6v4H3z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></svg><span>Заказы</span></a>
+      <a href="#/settings" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Настройки</span></a>
+    </nav>
+    <div class="side-foot"><div class="who" id="who"></div><button class="btn sm" data-act="logout">Выйти</button></div>
+  </aside>
+  <main id="view"></main>
+</div>
+
+<div id="overlay-root"></div>
+<div id="toast" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Безопасный вывод: всё, что подставляется в html`...`, экранируется,
+   кроме значений, обёрнутых в raw(). Данные пользователей (имена, адреса,
+   комментарии) никогда не попадают в разметку без экранирования.
+   ===================================================================== */
+const raw = s => ({ __raw: String(s) });
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const part = v => v && v.__raw !== undefined ? v.__raw : Array.isArray(v) ? v.map(part).join('') : esc(v);
+const html = (s, ...v) => raw(s.reduce((o, x, i) => o + x + (i < v.length ? part(v[i]) : ''), ''));
+const $ = (sel, root = document) => root.querySelector(sel);
+const put = (el, tpl) => { el.innerHTML = tpl.__raw; };
+
+/* ---------- хранилище токенов (sessionStorage может быть недоступен) ---------- */
+const store = {
+  get(k){ try { return sessionStorage.getItem(k); } catch { return this._m?.[k] ?? null; } },
+  set(k, v){ try { sessionStorage.setItem(k, v); } catch { (this._m ??= {})[k] = v; } },
+  clear(){ try { sessionStorage.clear(); } catch {} this._m = {}; },
+};
+
+/* ---------- API ---------- */
+const API = '/api/v1';
+const TZ = -new Date().getTimezoneOffset(); // минуты от UTC
+let refreshing = null;
+
+async function tryRefresh() {
+  const rt = store.get('rt');
+  if (!rt) return false;
+  refreshing ??= fetch(API + '/auth/refresh', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ refresh_token: rt }) })
+    .then(async r => { if (!r.ok) return false; const j = await r.json(); store.set('at', j.access_token); store.set('rt', j.refresh_token); return true; })
+    .catch(() => false)
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function api(path, { method = 'GET', body, raw: wantRaw = false } = {}, retry = true) {
+  const headers = {};
+  const at = store.get('at');
+  if (at) headers.Authorization = 'Bearer ' + at;
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(API + path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+  if (res.status === 401 && at) {
+    if (retry && await tryRefresh()) return api(path, { method, body, raw: wantRaw }, false);
+    logout(true);
+    throw new Error('Сессия истекла, войдите заново');
+  }
+  if (!res.ok) {
+    let msg = 'Ошибка ' + res.status;
+    try {
+      const j = await res.json();
+      msg = j.error?.message || (Array.isArray(j.detail) ? j.detail.map(d => d.msg.replace(/^Value error, /, '')).join('; ') : msg);
+    } catch {}
+    throw new Error(msg);
+  }
+  if (wantRaw) return res;
+  return res.status === 204 ? null : res.json();
+}
+const qs = o => { const p = new URLSearchParams(); for (const [k, v] of Object.entries(o)) if (v !== '' && v != null) p.set(k, v); return p.toString(); };
+
+/* ---------- форматирование ---------- */
+const CUR = { KZT:'₸', RUB:'₽', UAH:'₴', USD:'$', EUR:'€', UZS:'сўм', KGS:'сом' };
+const money = (n, cur) => new Intl.NumberFormat('ru-RU').format(Math.round(n)) + ' ' + (CUR[cur] || cur || '');
+const int = n => new Intl.NumberFormat('ru-RU').format(n);
+const dt = iso => iso ? new Date(iso).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+const day = iso => { const [y, m, d] = iso.split('-'); return `${d}.${m}`; };
+const stars = r => r == null ? '—' : '★ ' + r.toFixed(2).replace(/\.?0+$/, '');
+const trunc = (s, n) => s && s.length > n ? s.slice(0, n - 1) + '…' : s;
+
+const RIDE_STATUS = { searching:['Поиск','b-info'], accepted:['Водитель едет','b-info'], arrived:['Ожидает','b-warn'], in_progress:['В пути','b-warn'], completed:['Завершён','b-ok'], cancelled:['Отменён','b-bad'] };
+const DRIVER_STATUS = { incomplete:['Не заполнен','b-mute'], pending:['На проверке','b-warn'], approved:['Подтверждён','b-ok'], rejected:['Отклонён','b-bad'], blocked:['Заблокирован','b-bad'] };
+const DOC_STATUS = { pending:['На проверке','b-warn'], approved:['Принят','b-ok'], rejected:['Отклонён','b-bad'] };
+const DOC_TYPE = { driver_license:'Водительское удостоверение', vehicle_registration:'Свидетельство о регистрации ТС', id_card:'Удостоверение личности' };
+const ROLE = { passenger:'Пассажир', driver:'Водитель', admin:'Администратор' };
+const PAY = { cash:'Наличные', card:'Карта' };
+const badge = ([t, c]) => html`<span class="badge ${c}">${t}</span>`;
+const rideBadge = s => badge(RIDE_STATUS[s] || [s, 'b-mute']);
+const personLine = p => p ? html`${p.name || 'Без имени'} <span class="muted">${p.phone}</span>` : raw('<span class="muted">—</span>');
+
+/* ---------- UI-утилиты ---------- */
+function toast(msg, isErr = false) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.textContent = msg;
+  $('#toast').append(el);
+  setTimeout(() => el.remove(), isErr ? 6000 : 3000);
+}
+const fail = e => toast(e.message || String(e), true);
+
+function openOverlay(tpl, { center = false } = {}) {
+  closeOverlay();
+  const root = $('#overlay-root');
+  put(root, html`<div class="overlay ${center ? 'center' : ''}" data-act="overlay-bg"><div class="panel" role="dialog" aria-modal="true">${tpl}</div></div>`);
+  return $('.panel', root);
+}
+function closeOverlay() { put($('#overlay-root'), raw('')); }
+
+/* =====================================================================
+   Авторизация
+   ===================================================================== */
+const loginState = { step: 'phone', phone: '' };
+
+function showLogin() {
+  $('#app').classList.add('hidden');
+  $('#login').classList.remove('hidden');
+  setLoginStep('phone');
+}
+function setLoginStep(step, errMsg = '') {
+  loginState.step = step;
+  $('#phone-field').classList.toggle('hidden', step !== 'phone');
+  $('#code-field').classList.toggle('hidden', step !== 'code');
+  $('#login-back').classList.toggle('hidden', step !== 'code');
+  $('#login-btn').textContent = step === 'phone' ? 'Получить код' : 'Войти';
+  $('#debug-hint').classList.add('hidden');
+  const e = $('#login-error'); e.textContent = errMsg; e.classList.toggle('hidden', !errMsg);
+  if (step === 'code') { $('#code').value = ''; $('#code').focus(); } else $('#phone').focus();
+}
+
+$('#login-back').addEventListener('click', () => setLoginStep('phone'));
+$('#login-form').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const btn = $('#login-btn'); btn.disabled = true;
+  try {
+    if (loginState.step === 'phone') {
+      const phone = $('#phone').value.trim();
+      const r = await api('/auth/otp/request', { method:'POST', body:{ phone } });
+      loginState.phone = phone;
+      setLoginStep('code');
+      if (r.debug_code) { const h = $('#debug-hint'); h.textContent = 'Режим разработки, код: ' + r.debug_code; h.classList.remove('hidden'); }
+    } else {
+      const r = await api('/auth/otp/verify', { method:'POST', body:{ phone: loginState.phone, code: $('#code').value.trim() } });
+      if (r.user.role !== 'admin') { setLoginStep('phone', 'У этого номера нет доступа к админ-панели'); return; }
+      store.set('at', r.access_token); store.set('rt', r.refresh_token); store.set('me', r.user.name || r.user.phone);
+      start();
+    }
+  } catch (e) { setLoginStep(loginState.step, e.message); }
+  finally { btn.disabled = false; }
+});
+
+function logout(expired = false) {
+  store.clear(); clearTimers(); closeOverlay();
+  showLogin();
+  if (expired) setLoginStep('phone', 'Сессия истекла, войдите заново');
+}
+
+/* =====================================================================
+   Роутер
+   ===================================================================== */
+const PAGES = { dashboard: renderDashboard, users: renderUsers, rides: renderRides, settings: renderSettings };
+let timers = [], renderToken = 0;
+const clearTimers = () => { timers.forEach(clearInterval); timers = []; };
+
+function route() {
+  closeOverlay(); clearTimers();
+  const name = (location.hash.replace(/^#\//, '').split('?')[0]) || 'dashboard';
+  const page = PAGES[name] ? name : 'dashboard';
+  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  const token = ++renderToken;
+  PAGES[page]($('#view'), () => token === renderToken, new URLSearchParams(location.hash.split('?')[1] || ''));
+}
+window.addEventListener('hashchange', () => { if (store.get('at')) route(); });
+
+function start() {
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#who').textContent = store.get('me') || '';
+  route();
+}
+
+/* =====================================================================
+   Дашборд
+   ===================================================================== */
+const dash = { days: 7 };
+
+async function renderDashboard(view, alive, params) {
+  if (params.get('days')) dash.days = +params.get('days');
+  const draw = async (first) => {
+    let d;
+    try { d = await api('/admin/dashboard?' + qs({ days: dash.days, tz_offset_min: TZ })); }
+    catch (e) { if (first && alive()) put(view, html`<div class="empty">Не удалось загрузить данные: ${e.message}</div>`); return; }
+    if (!alive()) return;
+    put(view, dashboardHtml(d));
+  };
+  // при смене периода старые данные остаются на экране, пока грузятся новые (без мигания и сброса прокрутки)
+  if (!view.querySelector('.kpis')) put(view, raw('<div class="empty">Загрузка…</div>'));
+  await draw(true);
+  timers.push(setInterval(() => draw(false), 30000));
+}
+
+function delta(k, cur, invert = false) {
+  if (!k.previous) return k.value ? html`<span class="delta flat">нет данных за прошлый период</span>` : html`<span class="delta flat">—</span>`;
+  const pct = Math.round((k.value - k.previous) * 100 / k.previous);
+  if (pct === 0) return html`<span class="delta flat">без изменений</span>`;
+  const good = (pct > 0) !== invert;
+  return html`<span class="delta ${good ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct)}% к прошлому периоду</span>`;
+}
+
+function dashboardHtml(d) {
+  const cur = d.currency;
+  const kpi = (label, value, sub) => html`<div class="card kpi"><div class="label">${label}</div><div class="value num">${value}</div>${sub}</div>`;
+  return html`
+    <div class="page-head">
+      <h2>Дашборд</h2>
+      <div class="seg" role="group" aria-label="Период">${[7, 30, 90].map(n => html`<button data-act="period" data-days="${n}" class="${d.days === n ? 'on' : ''}">${n} дн.</button>`)}</div>
+    </div>
+    <div class="live">
+      <div class="pill"><span class="dot"></span>Водителей на линии <b class="num">${d.online_drivers}</b></div>
+      <div class="pill">Активных поездок <b class="num">${d.active_rides}</b></div>
+      <div class="pill">Ищут водителя <b class="num">${d.searching_rides}</b></div>
+      ${d.pending_drivers ? html`<a class="pill alert" href="#/users?driver_status=pending">Ждут проверки документов <b class="num">${d.pending_drivers}</b></a>` : ''}
+    </div>
+    <div class="grid kpis">
+      ${kpi('Выручка', money(d.gross.value, cur), delta(d.gross))}
+      ${kpi('Завершено поездок', int(d.rides_completed.value), delta(d.rides_completed))}
+      ${kpi('Создано заказов', int(d.rides_created.value), delta(d.rides_created))}
+      ${kpi('Средний чек', money(d.avg_check, cur), html`<span class="delta flat">комиссия сервиса ${money(d.platform_fee, cur)}</span>`)}
+      ${kpi('Отмены', d.cancel_rate.toString().replace('.', ',') + '%', html`<span class="delta flat">от завершённых и отменённых</span>`)}
+      ${kpi('Скидки по промокодам', money(d.discounts, cur), html`<span class="delta flat">в завершённых поездках</span>`)}
+      ${kpi('Новые пользователи', int(d.new_passengers + d.new_drivers), html`<span class="delta flat">${d.new_passengers} пасс. · ${d.new_drivers} водит.</span>`)}
+      ${kpi('Всего в системе', int(d.total_passengers + d.total_drivers), html`<span class="delta flat">${d.total_passengers} пасс. · ${d.total_drivers} водит. (${d.approved_drivers} подтв.)</span>`)}
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Заказы по дням</h3>
+        ${raw(chart(d.series, [{ key:'completed', color:'var(--accent)', label:'Завершены' }, { key:'cancelled', color:'var(--bar2)', label:'Отменены' }], v => int(v)))}
+      </div>
+      <div class="card"><h3>Выручка по дням</h3>
+        ${raw(chart(d.series, [{ key:'gross', color:'var(--ok)', label:'Выручка' }], v => money(v, cur)))}
+      </div>
+    </div>
+    <div class="card table-wrap"><div style="padding:18px 18px 0"><h3>Топ водителей за период</h3></div>
+      ${d.top_drivers.length ? html`<table><thead><tr><th>Водитель</th><th class="r">Поездок</th><th class="r">Заработал</th><th class="r">Рейтинг</th></tr></thead><tbody>
+        ${d.top_drivers.map(t => html`<tr class="click" data-act="open-user" data-id="${t.id}"><td>${personLine(t)}</td><td class="r num">${t.rides}</td><td class="r num">${money(t.earnings, cur)}</td><td class="r">${stars(t.rating_avg)}</td></tr>`)}
+      </tbody></table>` : html`<div class="empty">За этот период поездок ещё не было</div>`}
+    </div>`;
+}
+
+/* Столбчатая диаграмма (SVG без библиотек): стек из parts, подписи оси X через равные промежутки */
+function chart(series, parts, fmt) {
+  const W = 640, H = 220, R = 6, T = 10, B = 26;
+  // viewBox на телефоне сжимается вдвое — берём крупнее шрифт и отводим слева ровно столько места, сколько нужно самой длинной подписи
+  const fs = window.matchMedia('(max-width:820px)').matches ? 19 : 11, tx = `style="font-size:${fs}px"`;
+  const totals = series.map(p => parts.reduce((s, x) => s + p[x.key], 0));
+  const max = Math.max(...totals, 0);
+  const sc = niceScale(max), top = sc.top;
+  const L = Math.ceil(Math.max(...Array.from({ length: sc.n + 1 }, (_, i) => short(sc.step * i).length)) * fs * 0.62) + 12;
+  const bw = (W - L - R) / series.length;
+  const bar = Math.max(2, bw * 0.68);
+  const y = v => T + (H - T - B) * (1 - v / top);
+  let g = '';
+  for (let i = 0; i <= sc.n; i++) {
+    const v = sc.step * i, yy = y(v);
+    g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="var(--border)"/><text ${tx} x="${L - 6}" y="${yy + fs * 0.36}" text-anchor="end">${esc(short(v))}</text>`;
+  }
+  const every = Math.ceil(series.length / 8);
+  series.forEach((p, i) => {
+    const x = L + i * bw + (bw - bar) / 2;
+    let acc = 0;
+    const tip = `${day(p.date)}: ` + parts.map(s => `${s.label} — ${fmt(p[s.key])}`).join(', ');
+    let stack = '';
+    parts.forEach((s, k) => {
+      const h = (H - T - B) * p[s.key] / top;
+      if (h <= 0) return;
+      const yy = y(acc + p[s.key]);
+      stack += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${bar.toFixed(1)}" height="${h.toFixed(1)}" rx="2" style="fill:${s.color}"/>`;
+      acc += p[s.key];
+    });
+    g += `<g><title>${esc(tip)}</title><rect x="${(L + i * bw).toFixed(1)}" y="${T}" width="${bw.toFixed(1)}" height="${H - T - B}" fill="transparent"/>${stack}</g>`;
+    if (i % every === 0 || i === series.length - 1 && (series.length - 1) % every > every / 2)
+      g += `<text ${tx} x="${(L + i * bw + bw / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${day(p.date)}</text>`;
+  });
+  const label = 'График: ' + parts.map(s => s.label).join(', ') + ' по дням';
+  const legend = parts.length > 1 ? `<div class="legend">${parts.map(s => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('')}</div>` : '';
+  const empty = max === 0 ? `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" style="font-size:13px">Нет данных за период</text>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}${empty}</svg>${legend}`;
+}
+/* Шкала с «круглыми» делениями (1, 2, 2.5, 5 × 10^k), не больше 5 линий сетки; значения целые */
+function niceScale(max) {
+  if (max <= 0) return { step: 1, n: 4, top: 4 };
+  const rawStep = max / 4, p = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  let step = [1, 2, 2.5, 5, 10].map(m => m * p).find(s => s >= rawStep);
+  step = Math.max(1, Math.ceil(step));
+  const n = Math.ceil(max / step);
+  return { step, n, top: step * n };
+}
+const short = v => v >= 1e6 ? (v / 1e6).toFixed(v % 1e6 ? 1 : 0).replace('.', ',') + ' млн' : v >= 1e3 ? (v / 1e3).toFixed(v % 1e3 ? 1 : 0).replace('.', ',') + ' тыс' : String(Math.round(v * 10) / 10);
+
+/* =====================================================================
+   Пользователи
+   ===================================================================== */
+const usersState = { q:'', role:'', is_active:'', driver_status:'', offset:0, limit:20 };
+
+async function renderUsers(view, alive, params) {
+  if (params.has('driver_status')) { Object.assign(usersState, { driver_status: params.get('driver_status'), role: 'driver', offset: 0 }); }
+  put(view, html`
+    <div class="page-head"><h2>Пользователи</h2></div>
+    <div class="filters">
+      <input class="f-search" id="u-q" type="search" placeholder="Поиск по имени или номеру телефона" value="${usersState.q}">
+      <select id="u-role" aria-label="Роль"><option value="">Все роли</option>${opts({ passenger:'Пассажиры', driver:'Водители', admin:'Администраторы' }, usersState.role)}</select>
+      <select id="u-ds" aria-label="Статус водителя"><option value="">Любой статус водителя</option>${opts(Object.fromEntries(Object.entries(DRIVER_STATUS).map(([k, v]) => [k, v[0]])), usersState.driver_status)}</select>
+      <select id="u-act" aria-label="Доступ"><option value="">Любой доступ</option>${opts({ true:'Активные', false:'Заблокированные' }, usersState.is_active)}</select>
+    </div>
+    <div class="card table-wrap" id="u-table"></div>`);
+  const bind = (id, key) => $(id).addEventListener('change', e => { usersState[key] = e.target.value; usersState.offset = 0; loadUsers(alive); });
+  bind('#u-role', 'role'); bind('#u-ds', 'driver_status'); bind('#u-act', 'is_active');
+  let t; $('#u-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { usersState.q = e.target.value; usersState.offset = 0; loadUsers(alive); }, 300); });
+  loadUsers(alive);
+}
+const opts = (map, sel) => Object.entries(map).map(([k, v]) => html`<option value="${k}" ${String(sel) === k ? raw('selected') : ''}>${v}</option>`);
+
+async function loadUsers(alive) {
+  const box = $('#u-table'); if (!box) return;
+  let r;
+  try { r = await api('/admin/users?' + qs({ ...usersState })); } catch (e) { if (alive()) put(box, html`<div class="empty">${e.message}</div>`); return; }
+  if (!alive()) return;
+  put(box, r.items.length ? html`<table><thead><tr><th>Пользователь</th><th>Роль</th><th>Статус</th><th class="r">Поездок</th><th class="r">Рейтинг</th><th>Регистрация</th></tr></thead><tbody>
+    ${r.items.map(u => html`<tr class="click" data-act="open-user" data-id="${u.id}">
+      <td>${personLine(u)}</td>
+      <td>${ROLE[u.role]}</td>
+      <td>${!u.is_active ? badge(['Заблокирован', 'b-bad']) : u.driver_status ? html`${badge(DRIVER_STATUS[u.driver_status])} ${u.is_online ? badge(['На линии', 'b-ok']) : ''}` : badge(['Активен', 'b-ok'])}</td>
+      <td class="r num">${u.rides_count}</td><td class="r">${stars(u.rating_avg)}</td><td class="muted">${dt(u.created_at)}</td></tr>`)}
+    </tbody></table>${pager(r.total, usersState)}` : html`<div class="empty">Никого не найдено</div>`);
+}
+
+function pager(total, st) {
+  const from = st.offset + 1, to = Math.min(st.offset + st.limit, total);
+  return html`<div class="pager"><span class="num">${from}–${to} из ${int(total)}</span><div>
+    <button class="btn sm" data-act="page" data-dir="-1" ${st.offset === 0 ? raw('disabled') : ''}>← Назад</button>
+    <button class="btn sm" data-act="page" data-dir="1" ${to >= total ? raw('disabled') : ''}>Вперёд →</button></div></div>`;
+}
+
+async function openUser(id) {
+  const panel = openOverlay(raw('<div class="empty">Загрузка…</div>'));
+  let u;
+  try { u = await api('/admin/users/' + id); } catch (e) { closeOverlay(); fail(e); return; }
+  const dr = u.driver;
+  const docs = dr ? [
+    ...dr.documents.map(d => html`<div class="doc"><div class="grow"><b>${DOC_TYPE[d.doc_type]}</b><div style="margin:3px 0">${badge(DOC_STATUS[d.status])}</div><small>загружен ${dt(d.uploaded_at)}${d.reject_reason ? ' · причина: ' + d.reject_reason : ''}</small></div>
+      <div class="btns"><button class="btn sm" data-act="doc-view" data-id="${d.id}">Открыть</button>
+      ${d.status !== 'approved' ? html`<button class="btn sm primary" data-act="doc-ok" data-id="${d.id}" data-user="${u.id}">Принять</button>` : ''}
+      ${d.status !== 'rejected' ? html`<button class="btn sm danger" data-act="doc-no" data-id="${d.id}" data-user="${u.id}">Отклонить</button>` : ''}</div></div>`),
+    ...dr.missing_documents.map(t => html`<div class="doc"><div class="grow"><b>${DOC_TYPE[t]}</b><small>не загружен</small></div>${badge(['Нет файла', 'b-mute'])}</div>`),
+  ] : [];
+  const isDriver = u.role === 'driver';
+  put(panel, html`
+    <div class="panel-head"><div><h2>${u.name || 'Без имени'}</h2><div class="muted">${ROLE[u.role]} · ${u.phone}</div></div><button class="x" data-act="close" aria-label="Закрыть">×</button></div>
+    <div class="card section"><dl>
+      <dt>Статус</dt><dd>${!u.is_active ? badge(['Заблокирован', 'b-bad']) : dr ? badge(DRIVER_STATUS[dr.status]) : badge(['Активен', 'b-ok'])} ${dr?.is_online ? badge(['На линии', 'b-ok']) : ''}</dd>
+      ${dr?.block_reason ? html`<dt>Причина блокировки</dt><dd>${dr.block_reason}</dd>` : ''}
+      <dt>Регистрация</dt><dd>${dt(u.created_at)}</dd>
+      <dt>Рейтинг</dt><dd>${stars(u.rating_avg)} <span class="muted">(${u.rating_count} оценок)</span></dd>
+      <dt>Поездок</dt><dd class="num">${u.completed_rides} завершено · ${u.cancelled_rides} отменено</dd>
+      ${u.role !== 'admin' ? html`<dt>${isDriver ? 'Заработал' : 'Потратил'}</dt><dd class="num">${money(u.money_total, u.currency)}</dd>` : ''}
+      ${dr ? html`<dt>Автомобиль</dt><dd>${[dr.car_make, dr.car_model, dr.car_color, dr.car_year].filter(Boolean).join(' ') || '—'}</dd><dt>Госномер</dt><dd>${dr.plate_number || '—'}</dd><dt>Класс</dt><dd>${dr.car_class}</dd>` : ''}
+    </dl>
+    ${u.role !== 'admin' ? html`<div class="actions">${isDriver
+      ? (dr.status === 'blocked' ? html`<button class="btn sm" data-act="drv-unblock" data-id="${u.id}">Разблокировать водителя</button>` : html`<button class="btn sm danger" data-act="drv-block" data-id="${u.id}">Заблокировать водителя</button>`)
+      : ''}
+      ${u.is_active ? html`<button class="btn sm danger" data-act="acct" data-id="${u.id}" data-to="false">Заблокировать аккаунт</button>` : html`<button class="btn sm" data-act="acct" data-id="${u.id}" data-to="true">Разблокировать аккаунт</button>`}
+    </div>` : ''}</div>
+    ${dr ? html`<div class="card section"><h3>Документы</h3>${docs}</div>` : ''}
+    <div class="card section"><h3>Последние заказы</h3>
+      ${u.recent_rides.length ? html`<table><tbody>${u.recent_rides.map(r => html`<tr class="click" data-act="open-ride" data-id="${r.id}"><td>#${r.id}</td><td>${rideBadge(r.status)}</td><td class="num r">${money(r.final_price, r.currency)}</td><td class="muted">${dt(r.created_at)}</td></tr>`)}</tbody></table>` : html`<div class="muted">Заказов нет</div>`}
+    </div>`);
+}
+
+/* =====================================================================
+   Заказы
+   ===================================================================== */
+const ridesState = { q:'', status:'', date_from:'', date_to:'', offset:0, limit:20 };
+
+async function renderRides(view, alive) {
+  put(view, html`
+    <div class="page-head"><h2>Заказы</h2></div>
+    <div class="filters">
+      <input class="f-search" id="r-q" type="search" placeholder="Поиск: #номер заказа, телефон или имя" value="${ridesState.q}">
+      <select id="r-status" aria-label="Статус"><option value="">Все статусы</option>${opts(Object.fromEntries(Object.entries(RIDE_STATUS).map(([k, v]) => [k, v[0]])), ridesState.status)}</select>
+      <input id="r-from" type="date" aria-label="С даты" value="${ridesState.date_from}">
+      <input id="r-to" type="date" aria-label="По дату" value="${ridesState.date_to}">
+    </div>
+    <div class="card table-wrap" id="r-table"></div>`);
+  const bind = (id, key) => $(id).addEventListener('change', e => { ridesState[key] = e.target.value; ridesState.offset = 0; loadRides(alive); });
+  bind('#r-status', 'status'); bind('#r-from', 'date_from'); bind('#r-to', 'date_to');
+  let t; $('#r-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { ridesState.q = e.target.value; ridesState.offset = 0; loadRides(alive); }, 300); });
+  loadRides(alive);
+  timers.push(setInterval(() => loadRides(alive), 20000));
+}
+
+async function loadRides(alive) {
+  const box = $('#r-table'); if (!box) return;
+  let r;
+  try { r = await api('/admin/rides?' + qs({ ...ridesState, tz_offset_min: TZ })); } catch (e) { if (alive()) put(box, html`<div class="empty">${e.message}</div>`); return; }
+  if (!alive()) return;
+  put(box, r.items.length ? html`<table><thead><tr><th>№</th><th>Создан</th><th>Статус</th><th>Пассажир</th><th>Водитель</th><th>Маршрут</th><th class="r">Сумма</th></tr></thead><tbody>
+    ${r.items.map(x => html`<tr class="click" data-act="open-ride" data-id="${x.id}">
+      <td class="num">#${x.id}</td><td class="muted">${dt(x.created_at)}</td><td>${rideBadge(x.status)}</td>
+      <td>${personLine(x.passenger)}</td><td>${personLine(x.driver)}</td>
+      <td class="addr" title="${(x.pickup_address || '—') + ' → ' + (x.dropoff_address || '—')}">${trunc(x.pickup_address || 'точка на карте', 28)} → ${trunc(x.dropoff_address || 'точка на карте', 28)}</td>
+      <td class="r num">${money(x.final_price, x.currency)}${x.promo_code ? html`<div class="muted" style="font-size:12px">${x.promo_code}</div>` : ''}</td></tr>`)}
+    </tbody></table>${pager(r.total, ridesState)}` : html`<div class="empty">Заказов не найдено</div>`);
+}
+
+async function openRide(id) {
+  const panel = openOverlay(raw('<div class="empty">Загрузка…</div>'), { center: true });
+  let r;
+  try { r = await api('/admin/rides/' + id); } catch (e) { closeOverlay(); fail(e); return; }
+  const active = ['searching', 'accepted', 'arrived', 'in_progress'].includes(r.status);
+  const steps = [['Создан', r.created_at], ['Принят водителем', r.accepted_at], ['Водитель приехал', r.arrived_at], ['Поездка началась', r.started_at], ['Завершён', r.completed_at], ['Отменён', r.cancelled_at]].filter(s => s[1]);
+  put(panel, html`
+    <div class="panel-head"><div><h2>Заказ #${r.id}</h2><div style="margin-top:4px">${rideBadge(r.status)}</div></div><button class="x" data-act="close" aria-label="Закрыть">×</button></div>
+    <div class="card section"><h3>Маршрут</h3><dl>
+      <dt>Откуда</dt><dd>${r.pickup_address || 'без адреса'}<div class="muted num">${r.pickup_lat.toFixed(5)}, ${r.pickup_lng.toFixed(5)}</div></dd>
+      <dt>Куда</dt><dd>${r.dropoff_address || 'без адреса'}<div class="muted num">${r.dropoff_lat.toFixed(5)}, ${r.dropoff_lng.toFixed(5)}</div></dd>
+      <dt>Расстояние</dt><dd class="num">${r.distance_km} км · ${Math.round(r.duration_min)} мин</dd></dl></div>
+    <div class="card section"><h3>Участники</h3><dl>
+      <dt>Пассажир</dt><dd><a href="#" data-act="open-user" data-id="${r.passenger.id}">${r.passenger.name || 'Без имени'}</a> <span class="muted">${r.passenger.phone}</span></dd>
+      <dt>Водитель</dt><dd>${r.driver ? html`<a href="#" data-act="open-user" data-id="${r.driver.id}">${r.driver.name || 'Без имени'}</a> <span class="muted">${r.driver.phone}</span>${r.driver_car ? html`<div class="muted">${r.driver_car}</div>` : ''}` : raw('<span class="muted">не назначен</span>')}</dd></dl></div>
+    <div class="card section"><h3>Оплата</h3><dl>
+      <dt>Тариф</dt><dd>${r.tariff_code} · ${PAY[r.payment_method] || r.payment_method}</dd>
+      <dt>Стоимость</dt><dd class="num">${money(r.base_price, r.currency)}</dd>
+      <dt>Скидка</dt><dd class="num">${r.discount ? '−' + money(r.discount, r.currency) : '—'}${r.promo_code ? html` <span class="badge b-info">${r.promo_code}</span>` : ''}</dd>
+      <dt>К оплате</dt><dd class="num"><b>${money(r.final_price, r.currency)}</b></dd>
+      ${r.platform_fee != null ? html`<dt>Комиссия сервиса</dt><dd class="num">${money(r.platform_fee, r.currency)}</dd><dt>Заработок водителя</dt><dd class="num">${money(r.driver_earnings, r.currency)}</dd>` : ''}</dl></div>
+    <div class="card section"><h3>Хронология</h3><ul class="timeline">${steps.map(s => html`<li><span>${s[0]}</span><span class="muted num">${dt(s[1])}</span></li>`)}</ul>
+      ${r.status === 'cancelled' ? html`<dl style="margin-top:10px"><dt>Отменил</dt><dd>${ROLE[r.cancelled_by] || '—'}</dd><dt>Причина</dt><dd>${r.cancel_reason || '—'}</dd></dl>` : ''}</div>
+    ${r.ratings.length ? html`<div class="card section"><h3>Оценки</h3>${r.ratings.map(x => html`<div class="doc"><div class="grow"><b>${x.from_role === 'passenger' ? 'Пассажир → водителю' : 'Водитель → пассажиру'}</b>${x.comment || x.tags.length ? html`<small>${[x.comment, ...x.tags].filter(Boolean).join(' · ')}</small>` : ''}</div><b>${'★'.repeat(x.score)}<span class="muted">${'★'.repeat(5 - x.score)}</span></b></div>`)}</div>` : ''}
+    ${active ? html`<div class="actions"><button class="btn danger" data-act="ride-cancel" data-id="${r.id}">Отменить заказ</button></div>` : ''}`);
+}
+
+/* =====================================================================
+   Настройки
+   ===================================================================== */
+async function renderSettings(view, alive) {
+  if (!view.querySelector('#settings-form')) put(view, raw('<div class="empty">Загрузка…</div>'));
+  let list;
+  try { list = await api('/admin/settings'); } catch (e) { if (alive()) put(view, html`<div class="empty">${e.message}</div>`); return; }
+  if (!alive()) return;
+  const groups = [...new Set(list.map(s => s.group))];
+  put(view, html`
+    <div class="page-head"><h2>Настройки</h2></div>
+    <p class="muted" style="margin-top:-8px">Изменения применяются сразу, но только к новым действиям: уже созданные заказы не пересчитываются.</p>
+    <form id="settings-form">
+      ${groups.map(g => html`<div class="card set-group"><h3>${g}</h3>${list.filter(s => s.group === g).map(s => html`
+        <div class="set-row"><div><div class="t"><label for="s-${s.key}">${s.label}</label></div><div class="d">${s.description}</div>
+          <div class="meta">По умолчанию: ${s.default}${s.unit ? ' ' + s.unit : ''} · допустимо ${s.minimum}–${s.maximum}${s.is_custom ? html` · изменено ${dt(s.updated_at)}${s.updated_by ? ', ' + s.updated_by : ''} · <a href="#" data-act="reset-setting" data-key="${s.key}" data-default="${s.default}">сбросить</a>` : ''}</div></div>
+          <div class="input-unit"><input id="s-${s.key}" name="${s.key}" type="number" inputmode="decimal" step="${s.kind === 'int' ? 1 : 'any'}" min="${s.minimum}" max="${s.maximum}" value="${s.value}" data-orig="${s.value}" required>${s.unit ? html`<span>${s.unit}</span>` : ''}</div></div>`)}</div>`)}
+      <div class="savebar"><span class="muted" id="set-state"></span><button class="btn" type="button" data-act="settings-revert">Отменить</button><button class="btn primary" type="submit" id="set-save" disabled>Сохранить</button></div>
+    </form>`);
+  const form = $('#settings-form');
+  const changed = () => [...form.querySelectorAll('input')].filter(i => i.value !== '' && +i.value !== +i.dataset.orig);
+  const refresh = () => {
+    form.querySelectorAll('input').forEach(i => i.classList.toggle('changed', +i.value !== +i.dataset.orig));
+    const n = changed().length; $('#set-save').disabled = !n; $('#set-state').textContent = n ? `Изменено настроек: ${n}` : '';
+  };
+  form.addEventListener('input', refresh);
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const values = Object.fromEntries(changed().map(i => [i.name, +i.value]));
+    $('#set-save').disabled = true;
+    try { await api('/admin/settings', { method:'PATCH', body:{ values } }); toast('Настройки сохранены'); renderSettings(view, alive); }
+    catch (e) { fail(e); refresh(); }
+  });
+  view._settingsRefresh = refresh;
+}
+
+/* =====================================================================
+   Действия (делегирование событий)
+   ===================================================================== */
+const actions = {
+  logout: () => logout(),
+  close: () => closeOverlay(),
+  'overlay-bg': (el, ev) => { if (ev.target === el) closeOverlay(); },
+  period: el => { dash.days = +el.dataset.days; route(); },
+  'open-user': (el, ev) => { ev.preventDefault(); openUser(el.dataset.id); },
+  'open-ride': (el, ev) => { ev.preventDefault(); openRide(el.dataset.id); },
+  page: el => {
+    const onUsers = !!$('#u-table'), st = onUsers ? usersState : ridesState;
+    st.offset = Math.max(0, st.offset + st.limit * +el.dataset.dir);
+    (onUsers ? loadUsers : loadRides)(() => true);
+  },
+  'doc-view': async el => {
+    const w = window.open('', '_blank'); // открываем сразу, иначе блокировщик всплывающих окон сработает после await
+    try {
+      const res = await api(`/drivers/documents/${el.dataset.id}/file`, { raw: true });
+      const url = URL.createObjectURL(await res.blob());
+      if (w) w.location = url; else toast('Разрешите всплывающие окна для просмотра документа', true);
+    } catch (e) { w?.close(); fail(e); }
+  },
+  'doc-ok': async el => review(el, { approved: true }),
+  'doc-no': async el => {
+    const reason = prompt('Причина отклонения (её увидит водитель):');
+    if (reason === null) return;
+    if (reason.trim().length < 2) return toast('Укажите причину отклонения', true);
+    review(el, { approved: false, reason: reason.trim() });
+  },
+  'drv-block': async el => {
+    const reason = prompt('Причина блокировки водителя:');
+    if (reason === null) return;
+    if (reason.trim().length < 3) return toast('Укажите причину (минимум 3 символа)', true);
+    try { await api(`/admin/drivers/${el.dataset.id}/block`, { method:'POST', body:{ reason: reason.trim() } }); toast('Водитель заблокирован'); openUser(el.dataset.id); refreshList(); } catch (e) { fail(e); }
+  },
+  'drv-unblock': async el => {
+    try { await api(`/admin/drivers/${el.dataset.id}/unblock`, { method:'POST' }); toast('Водитель разблокирован'); openUser(el.dataset.id); refreshList(); } catch (e) { fail(e); }
+  },
+  acct: async el => {
+    const to = el.dataset.to === 'true';
+    if (!to && !confirm('Заблокировать аккаунт? Пользователь не сможет войти и пользоваться приложением.')) return;
+    try { await api(`/admin/users/${el.dataset.id}/active`, { method:'POST', body:{ is_active: to } }); toast(to ? 'Аккаунт разблокирован' : 'Аккаунт заблокирован'); openUser(el.dataset.id); refreshList(); } catch (e) { fail(e); }
+  },
+  'ride-cancel': async el => {
+    const reason = prompt('Причина отмены (необязательно). Заказ будет отменён для пассажира и водителя:', 'Отменён администратором');
+    if (reason === null) return;
+    try { await api(`/admin/rides/${el.dataset.id}/cancel`, { method:'POST', body:{ reason: reason.trim() || null } }); toast('Заказ отменён'); openRide(el.dataset.id); refreshList(); } catch (e) { fail(e); }
+  },
+  'reset-setting': (el, ev) => { ev.preventDefault(); const i = $('#s-' + el.dataset.key); i.value = el.dataset.default; i.dispatchEvent(new Event('input', { bubbles: true })); },
+  'settings-revert': () => { document.querySelectorAll('#settings-form input').forEach(i => { i.value = i.dataset.orig; }); $('#view')._settingsRefresh?.(); },
+};
+async function review(el, body) {
+  try { await api(`/admin/documents/${el.dataset.id}/review`, { method:'POST', body }); toast(body.approved ? 'Документ принят' : 'Документ отклонён'); openUser(el.dataset.user); refreshList(); } catch (e) { fail(e); }
+}
+function refreshList() { if ($('#u-table')) loadUsers(() => true); if ($('#r-table')) loadRides(() => true); }
+
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-act]');
+  if (el && actions[el.dataset.act]) actions[el.dataset.act](el, ev);
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeOverlay(); });
+
+/* ---------- старт ---------- */
+if (store.get('at')) start(); else showLogin();
+</script>
+</body>
+</html>
